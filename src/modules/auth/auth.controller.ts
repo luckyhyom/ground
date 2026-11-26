@@ -1,5 +1,9 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { Public } from '@nestjs/authentication';
+import {
+  type LoginRequestDto,
+  loginRequestSchema,
+} from './dto/login.request.dto.js';
 import {
   type SignupRequestDto,
   signupRequestSchema,
@@ -15,5 +19,12 @@ export class AuthController {
   @Post('signup')
   signup(@Body({ schema: signupRequestSchema }) signupDto: SignupRequestDto) {
     return this.authService.signup(signupDto);
+  }
+
+  /** 로그인: access token + refresh token 발급 */
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  login(@Body({ schema: loginRequestSchema }) loginDto: LoginRequestDto) {
+    return this.authService.login(loginDto);
   }
 }

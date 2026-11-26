@@ -30,6 +30,12 @@ describe('Auth (e2e)', () => {
       .send({ ...credentials, name: '홍길동' })
       .expect(201);
 
+  const login = () =>
+    request(app.getHttpServer())
+      .post('/auth/login')
+      .send(credentials)
+      .expect(200);
+
   describe('POST /auth/signup', () => {
     it('가입하면 사용자 정보만 돌려주고 토큰은 주지 않는다', async () => {
       const { body } = await request(app.getHttpServer())
@@ -62,6 +68,28 @@ describe('Auth (e2e)', () => {
         .post('/auth/signup')
         .send({ email: 'not-an-email', name: '', password: 'short' })
         .expect(400);
+    });
+  });
+
+  describe('로그인', () => {
+    beforeEach(async () => {
+      await signup();
+    });
+
+    it('로그인하면 access token 과 refresh token 을 준다', async () => {
+      const { body } = await login();
+      expect(body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+        expiresIn: 900,
+      });
+    });
+
+    it('비밀번호가 틀리면 401', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ ...credentials, password: 'wrong-password' })
+        .expect(401);
     });
   });
 });
