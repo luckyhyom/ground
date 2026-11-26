@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  /// 앱에서 만든 UUID (User.create)
+  id           String   @id @db.Char(36)
+  email        String   @unique @db.VarChar(255)
+  name         String   @db.VarChar(50)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+/// @nestjs/authentication 의 RefreshTokenStore 계약을 따른다.
+/// userId 에 외래 키를 걸지 않는다: 저장소 계약 테스트가 임의의 사용자 id 를 쓴다.
+model RefreshToken {
+  /// 토큰의 SHA-256
+  id              String    @id @db.VarChar(128)
+  familyId        String    @map("family_id") @db.VarChar(128)
+  userId          String    @map("user_id") @db.VarChar(128)
+  createdAt       DateTime  @map("created_at")
+  expiresAt       DateTime  @map("expires_at")
+  familyExpiresAt DateTime  @map("family_expires_at")
+  usedAt          DateTime? @map("used_at")
+  claims          Json?
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([familyExpiresAt])
+  @@map("refresh_tokens")
+}
+
+/// 폐기된 refresh token 계열. 폐기 이후에 저장된 같은 계열의 토큰도 막아야 해서 따로 둔다.
+model RevokedRefreshTokenFamily {
+  familyId        String    @id @map("family_id") @db.VarChar(128)
+  /// 정리(sweep)용. 계열의 토큰을 모를 때는 비어 있다.
+  familyExpiresAt DateTime? @map("family_expires_at")
+  revokedAt       DateTime  @default(now()) @map("revoked_at")
+
+  @@index([familyExpiresAt])
+  @@map("revoked_refresh_token_families")
+}
