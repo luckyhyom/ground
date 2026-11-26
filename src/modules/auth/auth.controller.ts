@@ -5,6 +5,10 @@ import {
   loginRequestSchema,
 } from './dto/login.request.dto.js';
 import {
+  type RefreshTokenRequestDto,
+  refreshTokenRequestSchema,
+} from './dto/refresh-token.request.dto.js';
+import {
   type SignupRequestDto,
   signupRequestSchema,
 } from './dto/signup.request.dto.js';
@@ -26,5 +30,25 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   login(@Body({ schema: loginRequestSchema }) loginDto: LoginRequestDto) {
     return this.authService.login(loginDto);
+  }
+
+  /** refresh token 으로 토큰 재발급 (refresh token 은 1회용, 회전됨) */
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  refresh(
+    @Body({ schema: refreshTokenRequestSchema })
+    { refreshToken }: RefreshTokenRequestDto,
+  ) {
+    return this.authService.refresh(refreshToken);
+  }
+
+  /** 로그아웃: 해당 refresh token 계열을 폐기 */
+  @Post('logout')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  logout(
+    @Body({ schema: refreshTokenRequestSchema })
+    { refreshToken }: RefreshTokenRequestDto,
+  ) {
+    return this.authService.logout(refreshToken);
   }
 }

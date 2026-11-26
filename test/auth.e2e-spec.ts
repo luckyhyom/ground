@@ -107,5 +107,24 @@ describe('Auth (e2e)', () => {
         .send({ ...credentials, password: 'wrong-password' })
         .expect(401);
     });
+    it('refresh token 은 회전되고, 로그아웃하면 더 쓸 수 없다', async () => {
+      const { body: first } = await login();
+
+      const { body: second } = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken: first.refreshToken })
+        .expect(200);
+      expect(second.refreshToken).not.toBe(first.refreshToken);
+
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .send({ refreshToken: second.refreshToken })
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken: second.refreshToken })
+        .expect(401);
+    });
   });
 });

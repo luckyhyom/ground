@@ -42,4 +42,12 @@ export class AuthService {
     });
     return new TokenResponseDto(tokens);
   }
+
+  async refresh(refreshToken: string): Promise<TokenResponseDto> {
+    return new TokenResponseDto(await this.tokenService.refresh(refreshToken));
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    await this.tokenService.revoke(refreshToken);
+  }
 }
