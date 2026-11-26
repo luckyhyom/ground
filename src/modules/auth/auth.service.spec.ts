@@ -39,9 +39,11 @@ describe('AuthService', () => {
 
       expect(user).toMatchObject({ email: input.email, name: input.name });
       expect(user).not.toHaveProperty('passwordHash');
-      const stored = (await userService.findEntityByEmail(input.email))!;
-      expect(stored.passwordHash).toMatch(/^\$scrypt\$/);
-      expect(stored.passwordHash).not.toContain(input.password);
+      const credentials = (await userService.findCredentialsByEmail(
+        input.email,
+      ))!;
+      expect(credentials.passwordHash).toMatch(/^\$scrypt\$/);
+      expect(credentials.passwordHash).not.toContain(input.password);
       expect(tokenService.issue).not.toHaveBeenCalled();
     });
   });
