@@ -1,11 +1,15 @@
-import { Module } from '@nestjs/common';
+import { Module, StandardSchemaValidationPipe } from '@nestjs/common';
+import { APP_PIPE } from '@nestjs/core';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
-import { UserModule } from './modules/user/user.module.js';
 
 @Module({
-  imports: [UserModule],
+  imports: [],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // @Body({ schema }) / @Param(..., { schema }) 로 지정한 스키마를 검증한다.
+    { provide: APP_PIPE, useClass: StandardSchemaValidationPipe },
+  ],
 })
 export class AppModule {}
