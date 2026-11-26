@@ -85,6 +85,22 @@ describe('Auth (e2e)', () => {
       });
     });
 
+    it('로그인해서 받은 access token 으로 내 정보를 조회한다', async () => {
+      const { body } = await login();
+      expect(body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+        expiresIn: 900,
+      });
+
+      const { body: me } = await request(app.getHttpServer())
+        .get('/users/me')
+        .set('Authorization', `Bearer ${body.accessToken}`)
+        .expect(200);
+      expect(me).toMatchObject({ email: credentials.email, name: '홍길동' });
+      expect(me).not.toHaveProperty('passwordHash');
+    });
+
     it('비밀번호가 틀리면 401', async () => {
       await request(app.getHttpServer())
         .post('/auth/login')
