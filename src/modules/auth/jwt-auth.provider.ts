@@ -18,7 +18,7 @@ export class JwtAuthProvider extends JwtBearerProvider<User> {
     registry.registerProvider(this);
   }
 
-  protected validate({ sub }: JwtClaims): User | undefined {
+  protected async validate({ sub }: JwtClaims): Promise<User | undefined> {
     return sub ? this.userService.findEntityById(sub) : undefined;
   }
 }
