@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AuthenticationModule } from '@nestjs/authentication';
 import { UserModule } from '../user/user.module.js';
 import { AuthOptionsFactory } from './auth-options.factory.js';
+import { AuthController } from './auth.controller.js';
+import { AuthService } from './auth.service.js';
 import { JwtAuthProvider } from './jwt-auth.provider.js';
 
 @Module({
@@ -10,6 +12,7 @@ import { JwtAuthProvider } from './jwt-auth.provider.js';
     AuthenticationModule.forRootAsync({ useClass: AuthOptionsFactory }),
     UserModule,
   ],
-  providers: [JwtAuthProvider],
+  controllers: [AuthController],
+  providers: [AuthService, JwtAuthProvider],
 })
 export class AuthModule {}
