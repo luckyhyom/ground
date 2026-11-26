@@ -5,6 +5,7 @@ import { AuthOptionsFactory } from './auth-options.factory.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthProvider } from './jwt-auth.provider.js';
+import { PrismaRefreshTokenStore } from './prisma-refresh-token.store.js';
 
 @Module({
   imports: [
@@ -13,6 +14,6 @@ import { JwtAuthProvider } from './jwt-auth.provider.js';
     UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtAuthProvider],
+  providers: [AuthService, JwtAuthProvider, PrismaRefreshTokenStore],
 })
 export class AuthModule {}
