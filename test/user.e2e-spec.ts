@@ -4,6 +4,8 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
+import { PrismaService } from './../src/prisma/prisma.service.js';
+import { clearDatabase } from './support/database.js';
 
 describe('Users (e2e)', () => {
   let app: INestApplication<App>;
@@ -17,6 +19,7 @@ describe('Users (e2e)', () => {
       .compile();
     app = moduleFixture.createNestApplication();
     await app.init();
+    await clearDatabase(app.get(PrismaService));
   });
 
   afterEach(async () => {

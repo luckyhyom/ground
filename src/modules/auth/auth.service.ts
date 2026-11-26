@@ -25,7 +25,7 @@ export class AuthService {
   }
 
   async login({ email, password }: LoginRequestDto): Promise<TokenResponseDto> {
-    const user = this.userService.findEntityByEmail(email);
+    const user = await this.userService.findEntityByEmail(email);
     // 사용자가 없어도 verify 를 거쳐서, 응답 시간으로 가입 여부가 드러나지 않게 한다.
     const valid = await this.passwordHasher.verify(
       password,

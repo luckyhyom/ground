@@ -1,6 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { PasswordHasher, TokenService } from '@nestjs/authentication';
 import { Test } from '@nestjs/testing';
+import { InMemoryUserRepository } from '../../../test/fakes/in-memory-user.repository.js';
 import { UserRepository } from '../user/user.repository.js';
 import { UserService } from '../user/user.service.js';
 import { AuthService } from './auth.service.js';
@@ -22,7 +23,7 @@ describe('AuthService', () => {
       providers: [
         AuthService,
         UserService,
-        UserRepository,
+        { provide: UserRepository, useClass: InMemoryUserRepository },
         { provide: PasswordHasher, useValue: new PasswordHasher({ logN: 10 }) },
         { provide: TokenService, useValue: tokenService },
       ],
@@ -38,7 +39,7 @@ describe('AuthService', () => {
 
       expect(user).toMatchObject({ email: input.email, name: input.name });
       expect(user).not.toHaveProperty('passwordHash');
-      const stored = userService.findEntityByEmail(input.email)!;
+      const stored = (await userService.findEntityByEmail(input.email))!;
       expect(stored.passwordHash).toMatch(/^\$scrypt\$/);
       expect(stored.passwordHash).not.toContain(input.password);
       expect(tokenService.issue).not.toHaveBeenCalled();
