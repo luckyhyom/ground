@@ -1,0 +1,130 @@
+import { INestApplication } from '@nestjs/common';
+import { PasswordHasher } from '@nestjs/authentication';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+import { App } from 'supertest/types.js';
+import { AppModule } from './../src/app.module.js';
+
+describe('Auth (e2e)', () => {
+  let app: INestApplication<App>;
+  const credentials = { email: 'a@example.com', password: 'password123' };
+
+  beforeEach(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider(PasswordHasher)
+      .useValue(new PasswordHasher({ logN: 10 }))
+      .compile();
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  const signup = () =>
+    request(app.getHttpServer())
+      .post('/auth/signup')
+      .send({ ...credentials, name: '홍길동' })
+      .expect(201);
+
+  const login = () =>
+    request(app.getHttpServer())
+      .post('/auth/login')
+      .send(credentials)
+      .expect(200);
+
+  describe('POST /auth/signup', () => {
+    it('가입하면 사용자 정보만 돌려주고 토큰은 주지 않는다', async () => {
+      const { body } = await request(app.getHttpServer())
+        .post('/auth/signup')
+        .send({
+          email: ' A@Example.com ',
+          name: '홍길동',
+          password: 'password123',
+        })
+        .expect(201);
+
+      expect(body).toEqual({
+        id: expect.any(String),
+        email: 'a@example.com',
+        name: '홍길동',
+        createdAt: expect.any(String),
+      });
+    });
+
+    it('같은 이메일로 다시 가입하면 409', async () => {
+      await signup();
+      await request(app.getHttpServer())
+        .post('/auth/signup')
+        .send({ ...credentials, name: '홍길동' })
+        .expect(409);
+    });
+
+    it('잘못된 입력이면 400', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/signup')
+        .send({ email: 'not-an-email', name: '', password: 'short' })
+        .expect(400);
+    });
+  });
+
+  describe('로그인', () => {
+    beforeEach(async () => {
+      await signup();
+    });
+
+    it('로그인하면 access token 과 refresh token 을 준다', async () => {
+      const { body } = await login();
+      expect(body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+        expiresIn: 900,
+      });
+    });
+
+    it('로그인해서 받은 access token 으로 내 정보를 조회한다', async () => {
+      const { body } = await login();
+      expect(body).toEqual({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+        expiresIn: 900,
+      });
+
+      const { body: me } = await request(app.getHttpServer())
+        .get('/users/me')
+        .set('Authorization', `Bearer ${body.accessToken}`)
+        .expect(200);
+      expect(me).toMatchObject({ email: credentials.email, name: '홍길동' });
+      expect(me).not.toHaveProperty('passwordHash');
+    });
+
+    it('비밀번호가 틀리면 401', async () => {
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ ...credentials, password: 'wrong-password' })
+        .expect(401);
+    });
+    it('refresh token 은 회전되고, 로그아웃하면 더 쓸 수 없다', async () => {
+      const { body: first } = await login();
+
+      const { body: second } = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken: first.refreshToken })
+        .expect(200);
+      expect(second.refreshToken).not.toBe(first.refreshToken);
+
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .send({ refreshToken: second.refreshToken })
+        .expect(204);
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refreshToken: second.refreshToken })
+        .expect(401);
+    });
+  });
+});
